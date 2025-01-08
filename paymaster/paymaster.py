@@ -16,17 +16,16 @@ from eth_account.messages import encode_defunct
 
 env = environ.Env()
 
-
+SUPPORTED_CHAINS = {"11155111", "80002"}
 # Todo: check wallet balance if it has the required tokens to pay for the paymaster fees
 # Todo: accept the full bundle as an input and check the approve operation
 @method
-def pm_sponsorUserOperation(request, token_address) -> Result:
+def pm_sponsorUserOperation(request, token_address, chainId) -> Result:
     w3 = Web3(Web3.HTTPProvider(env('HTTPProvider')))
-    
-    chainId = str(env('chainId'))
-    if chainId == "80002":
+    if chainId in SUPPORTED_CHAINS:
         w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-    
+    else:
+        return Error(2, "Unsupported ChainID", data=f"Supported chains are: {', '.join(SUPPORTED_CHAINS)}")    
     # Verify connection
     if w3.is_connected():
         print('\033[96m' +"Connected to the network!" + '\033[39m')
