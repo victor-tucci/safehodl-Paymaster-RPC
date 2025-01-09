@@ -52,7 +52,7 @@ python manage.py loaddata paymaster/tokenSeed.json
 ```
 
 ### Change .env variables if needed 
-the defaults work with the <a href='https://github.com/candidelabs/CandideWalletContracts'>CandideWalletContracts</a> repo for testing
+the defaults work with the <a href='https://github.com/victor-tucci/safehodl-contract'>SafeHodlContracts</a> repo for testing
 
 
 ### Create Super user for admin panel

@@ -16,7 +16,7 @@ from eth_account.messages import encode_defunct
 
 env = environ.Env()
 
-SUPPORTED_CHAINS = {"11155111", "80002"}
+SUPPORTED_CHAINS = {"11155111":env('SEPOLIA_PM'), "80002":env('AMOY_PM')}
 # Todo: check wallet balance if it has the required tokens to pay for the paymaster fees
 # Todo: accept the full bundle as an input and check the approve operation
 @method
@@ -86,9 +86,12 @@ def pm_sponsorUserOperation(request, token_address, chainId) -> Result:
         print('\033[91m' + "Insufficient token" + '\033[39m')
         return Error(3, "Insufficient token", data="")
 
-    abi = [{"inputs":[{"components":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"bytes","name":"initCode","type":"bytes"},{"internalType":"bytes","name":"callData","type":"bytes"},{"internalType":"uint256","name":"callGasLimit","type":"uint256"},{"internalType":"uint256","name":"verificationGasLimit","type":"uint256"},{"internalType":"uint256","name":"preVerificationGas","type":"uint256"},{"internalType":"uint256","name":"maxFeePerGas","type":"uint256"},{"internalType":"uint256","name":"maxPriorityFeePerGas","type":"uint256"},{"internalType":"bytes","name":"paymasterAndData","type":"bytes"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct UserOperation","name":"userOp","type":"tuple"},{"components":[{"internalType":"contract IERC20Metadata","name":"token","type":"address"},{"internalType":"enum CandidePaymaster.SponsoringMode","name":"mode","type":"uint8"},{"internalType":"uint48","name":"validUntil","type":"uint48"},{"internalType":"uint256","name":"fee","type":"uint256"},{"internalType":"uint256","name":"exchangeRate","type":"uint256"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct CandidePaymaster.PaymasterData","name":"paymasterData","type":"tuple"}],"name":"getHash","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"}]
-    paymaster = w3.eth.contract(address=env('paymaster_add'), abi=abi)
-
+    abi = [{"inputs":[{"components":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"nonce","type":"uint256"},{"internalType":"bytes","name":"initCode","type":"bytes"},{"internalType":"bytes","name":"callData","type":"bytes"},{"internalType":"uint256","name":"callGasLimit","type":"uint256"},{"internalType":"uint256","name":"verificationGasLimit","type":"uint256"},{"internalType":"uint256","name":"preVerificationGas","type":"uint256"},{"internalType":"uint256","name":"maxFeePerGas","type":"uint256"},{"internalType":"uint256","name":"maxPriorityFeePerGas","type":"uint256"},{"internalType":"bytes","name":"paymasterAndData","type":"bytes"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct UserOperation","name":"userOp","type":"tuple"},{"components":[{"internalType":"contract IERC20Metadata","name":"token","type":"address"},{"internalType":"enum SafeHodlPaymaster.SponsoringMode","name":"mode","type":"uint8"},{"internalType":"uint48","name":"validUntil","type":"uint48"},{"internalType":"uint256","name":"fee","type":"uint256"},{"internalType":"uint256","name":"exchangeRate","type":"uint256"},{"internalType":"bytes","name":"signature","type":"bytes"}],"internalType":"struct SafeHodlPaymaster.PaymasterData","name":"paymasterData","type":"tuple"}],"name":"getHash","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"}]
+    if chainId in SUPPORTED_CHAINS:
+        paymaster_address = SUPPORTED_CHAINS[chainId] 
+        paymaster = w3.eth.contract(address=paymaster_address, abi=abi)   
+    else:   
+        return Error(2, "Unsupported ChainID and unsupported Paymaster", data=f"Supported chains are: {', '.join(SUPPORTED_CHAINS)}")    
     paymasterData = [
         token["address"],
         1,  # SponsoringMode (GAS ONLY)
@@ -117,16 +120,21 @@ def pm_sponsorUserOperation(request, token_address, chainId) -> Result:
     return Success(paymasterAndData)
 
 @method
-def pm_getApprovedTokens() -> Result:
+def pm_getApprovedTokens(chainId) -> Result:
     result = []
-    approved_tokens = ERC20ApprovedToken.objects.filter(chains__has_key=env('chainId'))
+    
+    if chainId not in SUPPORTED_CHAINS:
+        return Error(2, "Unsupported ChainID", data=f"Supported chains are: {', '.join(SUPPORTED_CHAINS)}")
+    
+    approved_tokens = ERC20ApprovedToken.objects.filter(chains__has_key=chainId)
     print('approved_tokens',approved_tokens)
+    paymaster_address = SUPPORTED_CHAINS[chainId]  # Dynamically get paymaster address
     for approvedToken in approved_tokens:
-        token = approvedToken.chains[env('chainId')]
+        token = approvedToken.chains[chainId]
         exchange_rate = _get_token_rate(token)
         result.append({
             "address": token["address"],
-            "paymaster": env('paymaster_add'),
+            "paymaster": paymaster_address,  # Use dynamic paymaster address
             "exchangeRate": exchange_rate
         })
     return Success(result)
