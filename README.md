@@ -7,11 +7,11 @@
 
 # About
 
-Candide Wallet is a smart contract wallet for Ethereum Mainnet and EVM compatible rollups.<br/>
+SafeHodl Wallet is a smart contract wallet for Ethereum Mainnet and EVM compatible rollups.<br/>
 This repo includes the paymaster RPC service.
 
 # Features
-- a paymaster RPC that approves and signs operation to allow for gas sponsoship and paying gas with ERC-20 tokens.
+- a paymaster RPC that approves and signs operation to allow for gas sponsorship and paying gas with ERC-20 tokens.
 - admin control panel to view processed operations
 
 # How to use this repo
