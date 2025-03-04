@@ -51,6 +51,12 @@ python manage.py migrate
 python manage.py loaddata paymaster/tokenSeed.json
 ```
 
+### Update the database
+```
+python manage.py flush
+python manage.py loaddata paymaster/tokenSeed.json
+```
+
 ### Change .env variables if needed 
 the defaults work with the <a href='https://github.com/victor-tucci/safehodl-contract'>SafeHodlContracts</a> repo for testing
 
