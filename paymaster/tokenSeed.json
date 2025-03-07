@@ -50,6 +50,20 @@
   {
     "model": "paymaster.ERC20ApprovedToken",
     "fields": {
+      "name": "RON",
+      "chains": {
+        "80002": {
+          "address": "0x3Fcc9E5f80325dc425C6bB5252B0A9E336d19e61",
+          "decimals": 9,
+          "exchangeRateSource": "https://api.coingecko.com/api/v3/simple/price?ids=beldex&vs_currencies=eth",
+          "enabled": true
+        }
+      }
+    }
+  },
+  {
+    "model": "paymaster.ERC20ApprovedToken",
+    "fields": {
       "name": "TT",
       "chains": {
         "11155111": {

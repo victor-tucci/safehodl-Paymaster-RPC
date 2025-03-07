@@ -13,6 +13,7 @@ from web3.middleware import geth_poa_middleware
 from hexbytes import HexBytes
 import re
 from eth_account.messages import encode_defunct
+from eth_abi import decode
 
 env = environ.Env()
 
@@ -85,6 +86,7 @@ def pm_sponsorUserOperation(request, token_address, chainId) -> Result:
 
     # Accessing tuple elements by index
     sender = op[0]
+    call_data = op[3]
     callGasLimit = op[4]
     verificationGasLimit = op[5]
     preVerificationGas = op[6]
@@ -92,17 +94,16 @@ def pm_sponsorUserOperation(request, token_address, chainId) -> Result:
 
     # Calculate total gas
     total_gas = preVerificationGas + verificationGasLimit + callGasLimit
-
-    # Calculate actual token cost
-    actual_token_cost = ((total_gas * maxFeePerGas + (additional_gas * maxFeePerGas)) * exchange_rate) // 10**18
-    print("actual token cost : ", actual_token_cost)
-    
-  
-    # Check the wallet balance for the required token
     erc20_contract = w3.eth.contract(address=token_address, abi=ERC20_ABI)
     wallet_balance = erc20_contract.functions.balanceOf(sender).call()
-    if wallet_balance < actual_token_cost:
-        print('\033[91m' + "Insufficient token" + '\033[39m')
+    _dest, _value, _func, _approveToken, _approveFunc = decode(["address", "uint256", "bytes", "address", "bytes"], call_data[4:])
+    # Calculate actual token cost
+    actual_token_cost = ((total_gas * maxFeePerGas + (additional_gas * maxFeePerGas)) * exchange_rate) // 10**18
+    if (_func and (_dest.lower() == _approveToken.lower())) :
+        To,Amount = decode(["address", "uint256"], _func[4:])
+        if((Amount + actual_token_cost) > wallet_balance):
+            return Error(101, "Insufficient token to complete the transaction", data="")
+    elif wallet_balance < actual_token_cost:
         return Error(3, "Insufficient token", data="")
 
 
